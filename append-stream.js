@@ -29,8 +29,11 @@ AppendStream.prototype._open = function (path, flags, mode, callback) {
   var self = this
 
   fs.open(path, flags, mode, function (err, fd) {
-    if (err)
-      throw err
+    if (err) {
+      if (callback)
+        callback(err)
+      return
+    }
 
     self.fd = fd
     if (self.state === 'opening')
