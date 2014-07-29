@@ -9,7 +9,7 @@ var fs = require('fs')
       this.fd = null
       this.buffer = []
       this.callbacks = []
-      this.closeCallbacks = []
+      this.endCallbacks = []
 
       if (typeof(options) === 'function') {
         callback = options
@@ -71,7 +71,7 @@ AppendStream.prototype._process = function () {
     })
   } else if (this.state === 'ending') {
       self._flush(function () {
-        self._close()
+        self._end()
       })
   }
 }
@@ -93,12 +93,12 @@ AppendStream.prototype.write = function (buffer, callback) {
   this._process()
 }
 
-AppendStream.prototype._close = function () {
+AppendStream.prototype._end = function () {
   var self = this
 
   this.state = 'ending'
   fs.close(this.fd, function (err) {
-    var callbacks = self.closeCallbacks
+    var callbacks = self.endCallbacks
 
     if (err)
       return callbacks.forEach(function (callback) {
@@ -107,7 +107,7 @@ AppendStream.prototype._close = function () {
 
     self.fd = null
     self.callbacks = null
-    self.closeCallbacks = null
+    self.endCallbacks = null
     self.buffer = null
     self.state = 'ended'
     callbacks.forEach(function (callback) {
@@ -121,19 +121,19 @@ AppendStream.prototype.end = function (callback) {
     setImmediate(callback)
   } else if (this.state === 'ending') {
     if (callback) {
-      this.closeCallbacks.push(callback)
+      this.endCallbacks.push(callback)
     }
   } else if (this.state === 'idle'){
     this.state = 'ending'
 
     if (callback)
-      this.closeCallbacks.push(callback)
+      this.endCallbacks.push(callback)
 
-    this._close()
+    this._end()
   } else if (this.state === 'writing' || this.state === 'opening') {
     this.state = 'ending'
     if (callback)
-      this.closeCallbacks.push(callback)
+      this.endCallbacks.push(callback)
   }
 }
 
