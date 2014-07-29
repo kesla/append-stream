@@ -1,4 +1,5 @@
 var fs = require('fs')
+  , setImmediate = global.setImmediate || process.nextTick
 
   , AppendStream = function (path, options, callback) {
       if (!(this instanceof AppendStream))
@@ -8,7 +9,7 @@ var fs = require('fs')
       this.fd = null
       this.buffer = []
       this.callbacks = []
-      this.closeCallback = null
+      this.closeCallbacks = []
 
       if (typeof(options) === 'function') {
         callback = options
@@ -32,7 +33,8 @@ AppendStream.prototype._open = function (path, flags, mode, callback) {
       throw err
 
     self.fd = fd
-    self.state = 'idle'
+    if (self.state === 'opening')
+      self.state = 'idle'
     self._process()
     if (callback)
       callback(null, self)
@@ -70,7 +72,7 @@ AppendStream.prototype._process = function () {
     })
   } else if (this.state === 'closing') {
       self._flush(function () {
-        self._close(self.closeCallback)
+        self._close()
       })
   }
 }
@@ -86,35 +88,47 @@ AppendStream.prototype.write = function (buffer, callback) {
   this._process()
 }
 
-AppendStream.prototype._close = function (callback) {
+AppendStream.prototype._close = function () {
   var self = this
 
   this.state = 'closing'
   fs.close(this.fd, function (err) {
+    var callbacks = self.closeCallbacks
+
     if (err)
-      return callback(err)
+      return callbacks.forEach(function (callback) {
+        callback(err)
+      })
 
     self.fd = null
     self.callbacks = null
+    self.closeCallbacks = null
     self.buffer = null
     self.state = 'closed'
-    callback()
+    callbacks.forEach(function (callback) {
+      callback()
+    })
   })
 }
 
 AppendStream.prototype.close = function (callback) {
-  callback = callback || function () {}
-
-  if (this.state === 'opening') {
-    callback(new Error('Must open stream to close it'))
-  } else if (this.state === 'closing' || this.state === 'closed') {
-    callback(new Error('Stream can only be closed once'))
+  if (this.state === 'closed') {
+    setImmediate(callback)
+  } else if (this.state === 'closing') {
+    if (callback) {
+      this.closeCallbacks.push(callback)
+    }
   } else if (this.state === 'idle'){
     this.state = 'closing'
-    this._close(callback)
-  } else if (this.state === 'writing') {
+
+    if (callback)
+      this.closeCallbacks.push(callback)
+
+    this._close()
+  } else if (this.state === 'writing' || this.state === 'opening') {
     this.state = 'closing'
-    this.closeCallback = callback
+    if (callback)
+      this.closeCallbacks.push(callback)
   }
 }
 

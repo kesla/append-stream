@@ -99,7 +99,11 @@ test('close() opening stream', function (t) {
     , stream = new AppendStream(filename)
 
   stream.close(function (err) {
-    t.equal(err.message, 'Must open stream to close it')
+    t.notOk(err)
+    t.equal(stream.buffer, null)
+    t.equal(stream.callbacks, null)
+    t.equal(stream.fd, null)
+    t.equal(stream.state, 'closed')
     t.end()
   })
 })
@@ -152,7 +156,11 @@ test('double close', function (t) {
   AppendStream(filename, function (err, stream) {
     stream.close()
     stream.close(function (err) {
-      t.equal(err.message, 'Stream can only be closed once')
+      t.notOk(err)
+      t.equal(stream.buffer, null)
+      t.equal(stream.callbacks, null)
+      t.equal(stream.fd, null)
+      t.equal(stream.state, 'closed')
       t.end()
     })
   })
@@ -164,7 +172,11 @@ test('close closed stream', function (t) {
   AppendStream(filename, function (err, stream) {
     stream.close(function () {
       stream.close(function (err) {
-        t.equal(err.message, 'Stream can only be closed once')
+        t.notOk(err)
+        t.equal(stream.buffer, null)
+        t.equal(stream.callbacks, null)
+        t.equal(stream.fd, null)
+        t.equal(stream.state, 'closed')
         t.end()
       })
     })
