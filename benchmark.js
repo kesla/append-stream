@@ -7,80 +7,72 @@ var AppendStream = require('./append-stream')
 
   , buffer = new Buffer('Hello World, beep boop. Ey yo! OMG OMG!')
 
-  , setupParallelBenchmark = function (stream) {
-      return function (callback) {
-        var finished = 0
-          , index = 0
+  , setupParallelBenchmark = function (name, stream, callback) {
+      var start = Date.now()
+        , done = function () {
+            console.log('%s: %sms', name, Date.now() - start)
+            stream.end(callback)
+          }
+        , finished = 0
+        , index = 0
 
-        for(; index < max; ++index) {
-          stream.write(buffer, function (err) {
-            if (err)
-              throw err
+      for(; index < max; ++index) {
+        stream.write(buffer, function (err) {
+          if (err)
+            throw err
 
-            if (++finished === max)
-              callback()
-          })
-        }
+          if (++finished === max)
+            done()
+        })
       }
 
     }
-  , setupSeriesBenchmark = function (stream) {
-      return function (callback) {
-        var write = function (index) {
-          if (index === max)
-            return callback()
+  , setupSeriesBenchmark = function (name, stream, callback) {
+      var start = Date.now()
 
-          stream.write(buffer, function (err) {
-            if (err)
-              throw err
+        , done = function () {
+            console.log('%s: %sms', name, Date.now() - start)
+            stream.end(callback)
+          }
 
-            write(index + 1)
-          })
-        }
-        write(0)        
-      }
+        , write = function (index) {
+            if (index === max)
+              return done()
+
+            stream.write(buffer, function (err) {
+              if (err)
+                throw err
+
+              write(index + 1)
+            })
+          }
+      write(0)
     }
 
   , parallelAppendStream = function (callback) {
-      var stream  = new AppendStream(directory + '/parallel-append-bench.txt')
-        , start = Date.now()
-
-      setupParallelBenchmark(stream)(function () {
-        console.log('AppendStream: ' + (Date.now() - start) + 'ms')
-        if (callback)
-          callback()
+      require('./append-stream')(directory + '/parallel-append-bench.txt', function (err, stream) {
+        setupParallelBenchmark('AppendStream', stream, callback)
       })
     }
 
   , parallelWriteStream = function (callback) {
       var stream = new WriteStream(directory + '/parallel-writable-bench.txt')
-        , start = Date.now()
 
-      setupParallelBenchmark(stream)(function () {
-        console.log('WriteStream: ' + (Date.now() - start) + 'ms')
-        if (callback)
-          callback()
+      stream.once('open', function () {
+        setupParallelBenchmark('WriteStream', stream, callback)
       })
     }
   , seriesAppendStream = function (callback) {
-      var stream  = new AppendStream(directory + '/series-append-bench.txt')
-        , start = Date.now()
-
-      setupSeriesBenchmark(stream)(function () {
-        console.log('AppendStream: ' + (Date.now() - start) + 'ms')
-        if (callback)
-          callback()
+      require('./append-stream')(directory + '/series-append-bench.txt', function (err, stream) {
+        setupSeriesBenchmark('AppendStream', stream, callback)
       })
     }
 
   , seriesWriteStream = function (callback) {
       var stream = new WriteStream(directory + '/serie-writable-bench.txt')
-        , start = Date.now()
 
-      setupSeriesBenchmark(stream)(function () {
-        console.log('WriteStream: ' + (Date.now() - start) + 'ms')
-        if (callback)
-          callback()
+      stream.once('open', function () {
+        setupSeriesBenchmark('WriteStream', stream, callback)
       })
     }
 

@@ -75,11 +75,11 @@ Running `node benchmark.js` on my Macbook Pro I see:
 
 ```
 writing 5000 small Buffers in parallel
-AppendStream: 7ms
-WriteStream: 85ms
+AppendStream: 5ms
+WriteStream: 75ms
 writing 5000 small Buffers in series
-AppendStream: 66ms
-WriteStream: 67ms
+AppendStream: 65ms
+WriteStream: 65ms
 ```
 
 ## Licence
