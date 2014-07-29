@@ -12,7 +12,7 @@ A quick and dirty really fast stream-like module to append data to a file
 npm install append-stream
 ```
 
-## Differences from fs.WriteStream
+## Features
 
 `append-stream` behaves similar to `fs.createWriteStream()` - but it has fewer features. Currently `append-stream` does not support:
 
@@ -20,7 +20,7 @@ npm install append-stream
 * backpressure
 * streams2-compability
 
-In `append-stream` a write() you can only handle errors in the callback. This means that the below example there's no way to handle any potential error.
+In `append-stream` a write() or end() you can only handle errors in the callback. This means that the below example there's no way to handle any potential error.
 
 ```javascript
 
@@ -28,6 +28,7 @@ var stream = new AppendStream(filename)
 
 stream.write('beep')
 stream.write('boop')
+stream.end()
 
 ```
 
@@ -46,6 +47,15 @@ stream.write('boop', function () {
   require('fs').readFile(filename, 'utf8', function (err, content) {
     console.log('written to file:')
     console.log(content)
+
+    // you can also use append-stream as a factory
+    require('./append-stream')(filename + '2', function (err, stream) {
+      console.log('the stream is now opened and ready!')
+      // nice - you can end a stream!
+      stream.end(function () {
+        console.log('and now the stream has ended')
+      })
+    })
   })
 })
 ```
@@ -55,6 +65,8 @@ stream.write('boop', function () {
 ```
 written to file:
 beepboop
+the stream is now opened and ready!
+and now the stream has ended
 ```
 
 ## Benchmark
