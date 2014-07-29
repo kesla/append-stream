@@ -7,7 +7,14 @@ var fs = require('fs')
   , AppendStream = require('./append-stream')
 
 test('setup', function (t) {
-  require('mkdirp')(directory, t.end.bind(t));
+  require('rimraf')(directory, function (err) {
+    if (err)
+      return t.end(err)
+
+    require('mkdirp')(directory, t.end.bind(t));
+  })
+})
+
 })
 
 test('append some strings', function (t) {
