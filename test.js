@@ -15,6 +15,16 @@ test('setup', function (t) {
   })
 })
 
+test('factory init', function (t) {
+  var filename = directory + '/init-test.txt'
+
+  require('./append-stream')(filename, function (err, stream) {
+    t.error(err)
+    t.ok(stream instanceof AppendStream)
+    t.ok(typeof(stream.fd) === 'number')
+    t.equal(stream.state, 'idle')
+    t.end()
+  })
 })
 
 test('append some strings', function (t) {
