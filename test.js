@@ -28,7 +28,7 @@ test('factory init', function (t) {
 })
 
 test('append some strings', function (t) {
-  var filename = directory + '/test.txt'
+  var filename = directory + '/some-strings.txt'
     , stream = new AppendStream(filename)
 
   stream.write('beep ')
@@ -43,7 +43,7 @@ test('append some strings', function (t) {
 })
 
 test('append some buffers', function (t) {
-  var filename = directory + '/test2.txt'
+  var filename = directory + '/some-buffers.txt'
     , stream = new AppendStream(filename)
 
   stream.write(new Buffer([ 1, 2, 3, 4, 5 ]))
@@ -57,7 +57,7 @@ test('append some buffers', function (t) {
 })
 
 test('append lots of data', function (t) {
-  var filename = directory + '/test2.txt'
+  var filename = directory + '/lots-of-data.txt'
     , stream = new AppendStream(filename)
     , finished = 0
     , max = 5000
@@ -75,6 +75,98 @@ test('append lots of data', function (t) {
     fs.readFile(filename, function (err, content) {
       t.deepEqual(content, expected)
       t.end()
+    })
+  })
+})
+
+test('close() idle stream', function (t) {
+  var filename = directory + '/close-idle.txt'
+
+  AppendStream(filename, function (err, stream) {
+    stream.close(function (err) {
+      t.notOk(err)
+      t.equal(stream.buffer, null)
+      t.equal(stream.callbacks, null)
+      t.equal(stream.fd, null)
+      t.equal(stream.state, 'closed')
+      t.end()
+    })
+  })
+})
+
+test('close() opening stream', function (t) {
+  var filename = directory + '/close-opening.txt'
+    , stream = new AppendStream(filename)
+
+  stream.close(function (err) {
+    t.equal(err.message, 'Must open stream to close it')
+    t.end()
+  })
+})
+
+test('close() active stream', function (t) {
+  var filename = directory + '/close-active.txt'
+
+  AppendStream(filename, function (err, stream) {
+    stream.write('hello')
+    stream.write(', ')
+    stream.write('world')
+    // stream.buffer will have data at this point
+    stream.close(function () {
+      t.equal(stream.buffer, null)
+      t.equal(stream.callbacks, null)
+      t.equal(stream.fd, null)
+      t.equal(stream.state, 'closed')
+
+      fs.readFile(filename, 'utf8', function (err, content) {
+        t.equal(content, 'hello, world')
+        t.end()
+      })
+    })
+  })
+})
+
+test('close() active stream2', function (t) {
+  var filename = directory + '/close-active2.txt'
+
+  AppendStream(filename, function (err, stream) {
+    stream.write('hello')
+    // stream.buffer will be empty when running close (it's being written)
+    stream.close(function () {
+      t.equal(stream.buffer, null)
+      t.equal(stream.callbacks, null)
+      t.equal(stream.fd, null)
+      t.equal(stream.state, 'closed')
+
+      fs.readFile(filename, 'utf8', function (err, content) {
+        t.equal(content, 'hello')
+        t.end()
+      })
+    })
+  })
+})
+
+test('double close', function (t) {
+  var filename = directory + '/close-double.txt'
+
+  AppendStream(filename, function (err, stream) {
+    stream.close()
+    stream.close(function (err) {
+      t.equal(err.message, 'Stream can only be closed once')
+      t.end()
+    })
+  })
+})
+
+test('close closed stream', function (t) {
+  var filename = directory + '/close-already-closed.txt'
+
+  AppendStream(filename, function (err, stream) {
+    stream.close(function () {
+      stream.close(function (err) {
+        t.equal(err.message, 'Stream can only be closed once')
+        t.end()
+      })
     })
   })
 })
