@@ -79,48 +79,48 @@ test('append lots of data', function (t) {
   })
 })
 
-test('close() idle stream', function (t) {
-  var filename = directory + '/close-idle.txt'
+test('end() idle stream', function (t) {
+  var filename = directory + '/end-idle.txt'
 
   AppendStream(filename, function (err, stream) {
-    stream.close(function (err) {
+    stream.end(function (err) {
       t.notOk(err)
       t.equal(stream.buffer, null)
       t.equal(stream.callbacks, null)
       t.equal(stream.fd, null)
-      t.equal(stream.state, 'closed')
+      t.equal(stream.state, 'ended')
       t.end()
     })
   })
 })
 
-test('close() opening stream', function (t) {
-  var filename = directory + '/close-opening.txt'
+test('end() opening stream', function (t) {
+  var filename = directory + '/end-opening.txt'
     , stream = new AppendStream(filename)
 
-  stream.close(function (err) {
+  stream.end(function (err) {
     t.notOk(err)
     t.equal(stream.buffer, null)
     t.equal(stream.callbacks, null)
     t.equal(stream.fd, null)
-    t.equal(stream.state, 'closed')
+    t.equal(stream.state, 'ended')
     t.end()
   })
 })
 
-test('close() active stream', function (t) {
-  var filename = directory + '/close-active.txt'
+test('end() active stream', function (t) {
+  var filename = directory + '/end-active.txt'
 
   AppendStream(filename, function (err, stream) {
     stream.write('hello')
     stream.write(', ')
     stream.write('world')
     // stream.buffer will have data at this point
-    stream.close(function () {
+    stream.end(function () {
       t.equal(stream.buffer, null)
       t.equal(stream.callbacks, null)
       t.equal(stream.fd, null)
-      t.equal(stream.state, 'closed')
+      t.equal(stream.state, 'ended')
 
       fs.readFile(filename, 'utf8', function (err, content) {
         t.equal(content, 'hello, world')
@@ -130,17 +130,17 @@ test('close() active stream', function (t) {
   })
 })
 
-test('close() active stream2', function (t) {
-  var filename = directory + '/close-active2.txt'
+test('end() active stream2', function (t) {
+  var filename = directory + '/end-active2.txt'
 
   AppendStream(filename, function (err, stream) {
     stream.write('hello')
-    // stream.buffer will be empty when running close (it's being written)
-    stream.close(function () {
+    // stream.buffer will be empty when running end (it's being written)
+    stream.end(function () {
       t.equal(stream.buffer, null)
       t.equal(stream.callbacks, null)
       t.equal(stream.fd, null)
-      t.equal(stream.state, 'closed')
+      t.equal(stream.state, 'ended')
 
       fs.readFile(filename, 'utf8', function (err, content) {
         t.equal(content, 'hello')
@@ -150,33 +150,33 @@ test('close() active stream2', function (t) {
   })
 })
 
-test('double close', function (t) {
-  var filename = directory + '/close-double.txt'
+test('double end()', function (t) {
+  var filename = directory + '/end-double.txt'
 
   AppendStream(filename, function (err, stream) {
-    stream.close()
-    stream.close(function (err) {
+    stream.end()
+    stream.end(function (err) {
       t.notOk(err)
       t.equal(stream.buffer, null)
       t.equal(stream.callbacks, null)
       t.equal(stream.fd, null)
-      t.equal(stream.state, 'closed')
+      t.equal(stream.state, 'ended')
       t.end()
     })
   })
 })
 
-test('close closed stream', function (t) {
-  var filename = directory + '/close-already-closed.txt'
+test('end() on ended stream', function (t) {
+  var filename = directory + '/end-already-ended.txt'
 
   AppendStream(filename, function (err, stream) {
-    stream.close(function () {
-      stream.close(function (err) {
+    stream.end(function () {
+      stream.end(function (err) {
         t.notOk(err)
         t.equal(stream.buffer, null)
         t.equal(stream.callbacks, null)
         t.equal(stream.fd, null)
-        t.equal(stream.state, 'closed')
+        t.equal(stream.state, 'ended')
         t.end()
       })
     })

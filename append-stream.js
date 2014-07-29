@@ -64,13 +64,12 @@ AppendStream.prototype._process = function () {
     this.state = 'writing'
   
     this._flush(function () {
-      // check state here in case stream is closing
-
+      // check state here in case stream is ending
       if (self.state === 'writing')
         self.state = 'idle'
       self._process()
     })
-  } else if (this.state === 'closing') {
+  } else if (this.state === 'ending') {
       self._flush(function () {
         self._close()
       })
@@ -91,7 +90,7 @@ AppendStream.prototype.write = function (buffer, callback) {
 AppendStream.prototype._close = function () {
   var self = this
 
-  this.state = 'closing'
+  this.state = 'ending'
   fs.close(this.fd, function (err) {
     var callbacks = self.closeCallbacks
 
@@ -104,29 +103,29 @@ AppendStream.prototype._close = function () {
     self.callbacks = null
     self.closeCallbacks = null
     self.buffer = null
-    self.state = 'closed'
+    self.state = 'ended'
     callbacks.forEach(function (callback) {
       callback()
     })
   })
 }
 
-AppendStream.prototype.close = function (callback) {
-  if (this.state === 'closed') {
+AppendStream.prototype.end = function (callback) {
+  if (this.state === 'ended') {
     setImmediate(callback)
-  } else if (this.state === 'closing') {
+  } else if (this.state === 'ending') {
     if (callback) {
       this.closeCallbacks.push(callback)
     }
   } else if (this.state === 'idle'){
-    this.state = 'closing'
+    this.state = 'ending'
 
     if (callback)
       this.closeCallbacks.push(callback)
 
     this._close()
   } else if (this.state === 'writing' || this.state === 'opening') {
-    this.state = 'closing'
+    this.state = 'ending'
     if (callback)
       this.closeCallbacks.push(callback)
   }
