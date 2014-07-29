@@ -182,3 +182,16 @@ test('end() on ended stream', function (t) {
     })
   })
 })
+
+test('write() after end()', function (t) {
+  var filename = directory + '/write-after-end.txt'
+
+  AppendStream(filename, function (err, stream) {
+    stream.end(function () {
+      stream.write('hey ho', function (err) {
+        t.equal(err.message, 'write after end')
+        t.end()
+      })
+    })
+  })
+})

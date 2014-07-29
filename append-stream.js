@@ -77,6 +77,12 @@ AppendStream.prototype._process = function () {
 }
 
 AppendStream.prototype.write = function (buffer, callback) {
+  if (this.state === 'ending' || this.state === 'ended') {
+    if (callback)
+      callback(new Error('write after end'))
+    return
+  }
+
   if (!Buffer.isBuffer(buffer))
     buffer = new Buffer(buffer)
 
