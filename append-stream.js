@@ -95,24 +95,31 @@ AppendStream.prototype.write = function (buffer, callback) {
 
 AppendStream.prototype._end = function () {
   var self = this
+    , done = function (err) {
+        var callbacks = self.endCallbacks
+
+        // if something goes wrong we're going assume that the fd
+        // is closed
+        self.endCallbacks = null
+        self.fd = null
+        self.callbacks = null
+        self.endCallbacks = null
+        self.buffer = null
+        self.state = 'ended'
+
+        callbacks.forEach(function (callback) {
+          callback(err)
+        })
+      }
 
   this.state = 'ending'
-  fs.close(this.fd, function (err) {
-    var callbacks = self.endCallbacks
 
-    if (err)
-      return callbacks.forEach(function (callback) {
-        callback(err)
-      })
+  fs.fsync(this.fd, function (err) {
+    if (err) {
+      return done(err)
+    }
 
-    self.fd = null
-    self.callbacks = null
-    self.endCallbacks = null
-    self.buffer = null
-    self.state = 'ended'
-    callbacks.forEach(function (callback) {
-      callback()
-    })
+    fs.close(self.fd, done)
   })
 }
 
