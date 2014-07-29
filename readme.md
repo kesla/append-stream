@@ -74,8 +74,12 @@ and now the stream has ended
 Running `node benchmark.js` on my Macbook Pro I see:
 
 ```
-AppendStream: 15ms
-WriteStream: 74ms
+writing 5000 small Buffers in parallel
+AppendStream: 7ms
+WriteStream: 85ms
+writing 5000 small Buffers in series
+AppendStream: 66ms
+WriteStream: 67ms
 ```
 
 ## Licence
