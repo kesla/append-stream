@@ -1,6 +1,7 @@
 # append-stream[![build status](https://secure.travis-ci.org/kesla/append-stream.svg)](http://travis-ci.org/kesla/append-stream)
 
-A quick and dirty really fast stream-like module to append data to a file
+__sales pitch__: Sometimes all you want to do is to write to a file. And you want it to be simple. And fast. Oh, and perhaps open the file lazily. Well, than `append-stream` is the right choice for you!
+
 
 [![NPM](https://nodei.co/npm/append-stream.png?downloads&stars)](https://nodei.co/npm/append-stream/)
 
@@ -12,13 +13,19 @@ A quick and dirty really fast stream-like module to append data to a file
 npm install append-stream
 ```
 
+
 ## Features
+
+### Comparsion to fs.createWriteStream()
 
 `append-stream` behaves similar to `fs.createWriteStream()` - but it has fewer features. Currently `append-stream` does not support:
 
 * .pipe()
 * backpressure
 * streams2-compability
+* writing data at some point past the beginning of the file
+
+### Error handling
 
 In `append-stream` a write() or end() you can only handle errors in the callback. This means that the below example there's no way to handle any potential error.
 
@@ -31,6 +38,12 @@ stream.write('boop')
 stream.end()
 
 ```
+
+### lazy: true
+
+A feature that `append-stream` has is that you can configure it to lazily open (and thereby create) the file that's being appended to.
+
+This means that the file will be opened the first time that you call `stream.write()`
 
 ## Example
 
