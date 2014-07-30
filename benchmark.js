@@ -76,12 +76,16 @@ var AppendStream = require('./append-stream')
       })
     }
 
-console.log('writing %s small Buffers in parallel', max)
-parallelAppendStream(function () {
-  parallelWriteStream(function () {
-    console.log('writing %s small Buffers in series', max)
-    seriesAppendStream(function () {
-      seriesWriteStream()
+require('rimraf')(directory, function () {
+  require('mkdirp')(directory, function () {
+    console.log('writing %s small Buffers in parallel', max)
+    parallelAppendStream(function () {
+      parallelWriteStream(function () {
+        console.log('writing %s small Buffers in series', max)
+        seriesAppendStream(function () {
+          seriesWriteStream()
+        })
+      })
     })
   })
 })
