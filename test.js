@@ -22,7 +22,7 @@ test('factory init', function (t) {
     t.error(err)
     t.ok(stream instanceof AppendStream)
     t.ok(typeof(stream.fd) === 'number')
-    t.equal(stream.state, 'idle')
+    t.equal(stream.status, 'idle')
     t.end()
   })
 })
@@ -85,10 +85,11 @@ test('end() idle stream', function (t) {
   AppendStream(filename, function (err, stream) {
     stream.end(function (err) {
       t.notOk(err)
-      t.equal(stream.buffer, null)
-      t.equal(stream.callbacks, null)
+      t.equal(stream.writeBuffer, null)
+      t.equal(stream.writeCallbacks, null)
+      t.equal(stream.endCallbacks, null)
       t.equal(stream.fd, null)
-      t.equal(stream.state, 'ended')
+      t.equal(stream.status, 'ended')
       t.end()
     })
   })
@@ -100,10 +101,11 @@ test('end() opening stream', function (t) {
 
   stream.end(function (err) {
     t.notOk(err)
-    t.equal(stream.buffer, null)
-    t.equal(stream.callbacks, null)
+    t.equal(stream.writeBuffer, null)
+    t.equal(stream.writeCallbacks, null)
+    t.equal(stream.endCallbacks, null)
     t.equal(stream.fd, null)
-    t.equal(stream.state, 'ended')
+    t.equal(stream.status, 'ended')
     t.end()
   })
 })
@@ -115,12 +117,13 @@ test('end() active stream', function (t) {
     stream.write('hello')
     stream.write(', ')
     stream.write('world')
-    // stream.buffer will have data at this point
+    // stream.writeBuffer will have data at this point
     stream.end(function () {
-      t.equal(stream.buffer, null)
-      t.equal(stream.callbacks, null)
+      t.equal(stream.writeBuffer, null)
+      t.equal(stream.writeCallbacks, null)
+      t.equal(stream.endCallbacks, null)
       t.equal(stream.fd, null)
-      t.equal(stream.state, 'ended')
+      t.equal(stream.status, 'ended')
 
       fs.readFile(filename, 'utf8', function (err, content) {
         t.equal(content, 'hello, world')
@@ -135,12 +138,13 @@ test('end() active stream2', function (t) {
 
   AppendStream(filename, function (err, stream) {
     stream.write('hello')
-    // stream.buffer will be empty when running end (it's being written)
+    // stream.writeBuffer will be empty when running end (it's being written)
     stream.end(function () {
-      t.equal(stream.buffer, null)
-      t.equal(stream.callbacks, null)
+      t.equal(stream.writeBuffer, null)
+      t.equal(stream.writeCallbacks, null)
+      t.equal(stream.endCallbacks, null)
       t.equal(stream.fd, null)
-      t.equal(stream.state, 'ended')
+      t.equal(stream.status, 'ended')
 
       fs.readFile(filename, 'utf8', function (err, content) {
         t.equal(content, 'hello')
@@ -157,10 +161,11 @@ test('double end()', function (t) {
     stream.end()
     stream.end(function (err) {
       t.notOk(err)
-      t.equal(stream.buffer, null)
-      t.equal(stream.callbacks, null)
+      t.equal(stream.writeBuffer, null)
+      t.equal(stream.writeCallbacks, null)
+      t.equal(stream.endCallbacks, null)
       t.equal(stream.fd, null)
-      t.equal(stream.state, 'ended')
+      t.equal(stream.status, 'ended')
       t.end()
     })
   })
@@ -173,10 +178,11 @@ test('end() on ended stream', function (t) {
     stream.end(function () {
       stream.end(function (err) {
         t.notOk(err)
-        t.equal(stream.buffer, null)
-        t.equal(stream.callbacks, null)
+        t.equal(stream.writeBuffer, null)
+        t.equal(stream.writeCallbacks, null)
+        t.equal(stream.endCallbacks, null)
         t.equal(stream.fd, null)
-        t.equal(stream.state, 'ended')
+        t.equal(stream.status, 'ended')
         t.end()
       })
     })

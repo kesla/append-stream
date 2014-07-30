@@ -5,10 +5,10 @@ var fs = require('fs')
       if (!(this instanceof AppendStream))
         return new AppendStream(path, options, callback)
 
-      this.state = 'opening'
+      this.status = 'new'
       this.fd = null
-      this.buffer = []
-      this.callbacks = []
+      this.writeBuffer = []
+      this.writeCallbacks = []
       this.endCallbacks = []
 
       if (typeof(options) === 'function') {
@@ -40,8 +40,8 @@ AppendStream.prototype._open = function (path, flags, mode, callback) {
 
       // check so that we're behaving well even if we're closing an open
       // stream directly
-      if (self.state === 'opening')
-        self.state = 'idle'
+      if (self.status === 'new')
+        self.status = 'idle'
 
       self._process()
       callback(null, self)
@@ -50,16 +50,16 @@ AppendStream.prototype._open = function (path, flags, mode, callback) {
 }
 
 AppendStream.prototype._flush = function (callback) {
-  var callbacks = this.callbacks
-    , buffer = Buffer.concat(this.buffer)
+  var writeCallbacks = this.writeCallbacks
+    , buffer = Buffer.concat(this.writeBuffer)
     , self = this
 
-  this.callbacks = []
-  this.buffer = []
+  this.writeCallbacks = []
+  this.writeBuffer = []
 
   fs.write(this.fd, buffer, 0, buffer.length, null, function (err) {
-    callbacks.forEach(function (callback) {
-      callback(err)
+    writeCallbacks.forEach(function (writeCallback) {
+      writeCallback(err)
     })
     callback()
   })
@@ -68,17 +68,17 @@ AppendStream.prototype._flush = function (callback) {
 AppendStream.prototype._process = function () {
   var self = this
 
-  if (this.state === 'idle' && this.buffer.length > 0) {
-    this.state = 'writing'
-  
+  if (this.status === 'idle' && this.writeBuffer.length > 0) {
+    this.status = 'writing'
+
     this._flush(function () {
-      // check state here in case stream is ending
-      if (self.state === 'writing')
-        self.state = 'idle'
+      // check status here in case stream is ending
+      if (self.status === 'writing')
+        self.status = 'idle'
 
       self._process()
     })
-  } else if (this.state === 'ending') {
+  } else if (this.status === 'ending') {
       self._flush(function () {
         self._end()
       })
@@ -90,26 +90,26 @@ AppendStream.prototype.write = function (buffer, callback) {
 
   callback = callback || noop
 
-  if (this.state === 'ending' || this.state === 'ended')
+  if (this.status === 'ending' || this.status === 'ended')
     return callback(new Error('write after end'))
 
   if (!Buffer.isBuffer(buffer))
     buffer = new Buffer(buffer)
 
-  if (this.buffer.length === 0 && this.state === 'idle') {
-    this.state = 'writing'
+  if (this.writeBuffer.length === 0 && this.status === 'idle') {
+    this.status = 'writing'
 
     fs.write(this.fd, buffer, 0, buffer.length, null, function (err) {
-      if (self.state === 'writing')
-        self.state = 'idle'
+      if (self.status === 'writing')
+        self.status = 'idle'
 
       self._process()
       callback()
     })
   } else {
-    this.buffer.push(buffer)
+    this.writeBuffer.push(buffer)
     if (callback !== noop)
-      this.callbacks.push(callback)
+      this.writeCallbacks.push(callback)
 
     this._process()
   }
@@ -118,23 +118,23 @@ AppendStream.prototype.write = function (buffer, callback) {
 AppendStream.prototype._end = function () {
   var self = this
     , done = function (err) {
-        var callbacks = self.endCallbacks
+        var endCallbacks = self.endCallbacks
 
         // if something goes wrong we're going assume that the fd
         // is closed
         self.endCallbacks = null
         self.fd = null
-        self.callbacks = null
+        self.writeBuffer = null
+        self.writeCallbacks = null
         self.endCallbacks = null
-        self.buffer = null
-        self.state = 'ended'
+        self.status = 'ended'
 
-        callbacks.forEach(function (callback) {
-          callback(err)
+        endCallbacks.forEach(function (endCallback) {
+          endCallback(err)
         })
       }
 
-  this.state = 'ending'
+  this.status = 'ending'
 
   fs.fsync(this.fd, function (err) {
     if (err) {
@@ -146,15 +146,15 @@ AppendStream.prototype._end = function () {
 }
 
 AppendStream.prototype.end = function (callback) {
-  var oldState = this.state
+  var oldStatus = this.status
 
-  if (oldState === 'ended') {
+  if (oldStatus === 'ended') {
     setImmediate(callback)
   } else {
-    this.state = 'ending'
+    this.status = 'ending'
     if (callback)
       this.endCallbacks.push(callback)
-    if (oldState === 'idle') {
+    if (oldStatus === 'idle') {
       this._end()
     }
   }
