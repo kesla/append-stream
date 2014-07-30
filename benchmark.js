@@ -3,7 +3,7 @@ var AppendStream = require('./append-stream')
 
   , directory = __dirname + '/testdir'
 
-  , max = 5000
+  , max = 100000
 
   , buffer = new Buffer('Hello World, beep boop. Ey yo! OMG OMG!')
 
