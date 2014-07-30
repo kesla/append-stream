@@ -201,3 +201,63 @@ test('write() after end()', function (t) {
     })
   })
 })
+
+test('lazy: true, but no write() & then end()', function (t) {
+  var filename = directory + '/lazy-no-write.txt'
+
+  AppendStream(filename, { lazy: true }, function (err, stream) {
+    stream.end(function () {
+      t.equal(stream.writeBuffer, null)
+      t.equal(stream.writeCallbacks, null)
+      t.equal(stream.endCallbacks, null)
+      t.equal(stream.fd, null)
+      t.equal(stream.status, 'ended')
+      fs.exists(filename, function (exists) {
+        t.equal(exists, false)
+        t.end()
+      })
+    })
+  })
+})
+
+test('lazy: true, write & then end', function (t) {
+  var filename = directory + '/lazy-write-end.txt'
+
+  AppendStream(filename, { lazy: true }, function (err, stream) {
+    stream.write('beep boop', function () {
+      fs.readFile(filename, function (err, content) {
+        t.equal(content.toString(), 'beep boop')
+        stream.end(function () {
+          t.equal(stream.writeBuffer, null)
+          t.equal(stream.writeCallbacks, null)
+          t.equal(stream.endCallbacks, null)
+          t.equal(stream.fd, null)
+          t.equal(stream.status, 'ended')
+          t.end()
+        })
+      })
+    })
+  })
+})
+
+test('lazy: true, multiple writes', function (t) {
+  var filename = directory + '/lazy-multiple-writes.txt'
+
+  AppendStream(filename, { lazy: true }, function (err, stream) {
+    stream.write('beep')
+    stream.write(' ')
+    stream.write('boop', function () {
+      fs.readFile(filename, function (err, content) {
+        t.equal(content.toString(), 'beep boop')
+        stream.end(function () {
+          t.equal(stream.writeBuffer, null)
+          t.equal(stream.writeCallbacks, null)
+          t.equal(stream.endCallbacks, null)
+          t.equal(stream.fd, null)
+          t.equal(stream.status, 'ended')
+          t.end()
+        })
+      })
+    })
+  })
+})

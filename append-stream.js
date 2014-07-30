@@ -17,36 +17,52 @@ var fs = require('fs')
       }
 
       options = options || {}
-      this._open(
-          path
-        , options.flags || 'w'
-        , options.mode || 0666
-        , callback
-      )
+      callback = callback || noop
+
+      this.options = {
+          flags: options.flags || 'w'
+        , mode: options.mode || 0666
+        , lazy: options.lazy === true
+        , path: path
+      }
+
+      var self = this
+
+      if (!this.options.lazy)
+        this._open(callback)
+      else
+        setImmediate(function () {
+          callback(null, self)
+        })
     }
   , noop = function () {}
 
-AppendStream.prototype._open = function (path, flags, mode, callback) {
+AppendStream.prototype._open = function (callback) {
   var self = this
 
-  callback = callback || noop
+  this.status = 'opening'
 
-  fs.open(path, flags, mode, function (err, fd) {
+  fs.open(
+      this.options.path
+    , this.options.flags
+    , this.options.mode
+    , function (err, fd) {
 
-    if (err) {
-      callback(err)
-    } else {
-      self.fd = fd
+        if (err) {
+          callback(err)
+        } else {
+          self.fd = fd
 
-      // check so that we're behaving well even if we're closing an open
-      // stream directly
-      if (self.status === 'new')
-        self.status = 'idle'
+          // check so that we're behaving well even if we're closing an open
+          // stream directly
+          if (self.status === 'opening')
+            self.status = 'idle'
 
-      self._process()
-      callback(null, self)
-    }
-  })
+          self._process()
+          callback(null, self)
+        }
+      }
+  )
 }
 
 AppendStream.prototype._flush = function (callback) {
@@ -82,6 +98,10 @@ AppendStream.prototype._process = function () {
       self._flush(function () {
         self._end()
       })
+  } else if (this.status === 'new') {
+    self._open(function () {
+      self._process()
+    })
   }
 }
 
@@ -136,6 +156,9 @@ AppendStream.prototype._end = function () {
 
   this.status = 'ending'
 
+  if (this.fd === null)
+    return setImmediate(done)
+
   fs.fsync(this.fd, function (err) {
     if (err) {
       return done(err)
@@ -148,13 +171,14 @@ AppendStream.prototype._end = function () {
 AppendStream.prototype.end = function (callback) {
   var oldStatus = this.status
 
+  callback = callback || noop
+
   if (oldStatus === 'ended') {
     setImmediate(callback)
   } else {
     this.status = 'ending'
-    if (callback)
-      this.endCallbacks.push(callback)
-    if (oldStatus === 'idle') {
+    this.endCallbacks.push(callback)
+    if (oldStatus === 'idle' || oldStatus === 'new' && this.options.lazy) {
       this._end()
     }
   }
