@@ -71,15 +71,15 @@ and now the stream has ended
 
 ## Benchmark
 
-Running `node benchmark.js` on my Macbook Pro I see:
+Running `node benchmark.js` on my Macbook Air (mid 2012) I get the following results:
 
 ```
-writing 5000 small Buffers in parallel
-AppendStream: 5ms
-WriteStream: 75ms
-writing 5000 small Buffers in series
-AppendStream: 65ms
-WriteStream: 65ms
+writing 100000 small Buffers in parallel
+AppendStream: 310ms
+WriteStream: 6836ms
+writing 100000 small Buffers in series
+AppendStream: 1815ms
+WriteStream: 2066ms
 ```
 
 ## Licence

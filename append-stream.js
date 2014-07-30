@@ -70,6 +70,7 @@ AppendStream.prototype._process = function () {
       // check state here in case stream is ending
       if (self.state === 'writing')
         self.state = 'idle'
+
       self._process()
     })
   } else if (this.state === 'ending') {
@@ -80,6 +81,8 @@ AppendStream.prototype._process = function () {
 }
 
 AppendStream.prototype.write = function (buffer, callback) {
+  var self = this
+
   if (this.state === 'ending' || this.state === 'ended') {
     if (callback)
       callback(new Error('write after end'))
@@ -89,11 +92,23 @@ AppendStream.prototype.write = function (buffer, callback) {
   if (!Buffer.isBuffer(buffer))
     buffer = new Buffer(buffer)
 
-  this.buffer.push(buffer)
-  if (typeof(callback) === 'function')
-    this.callbacks.push(callback)
+  if (this.buffer.length === 0 && this.state === 'idle') {
+    this.state = 'writing'
 
-  this._process()
+    fs.write(this.fd, buffer, 0, buffer.length, null, function (err) {
+      if (self.state === 'writing')
+        self.state = 'idle'
+
+      self._process()
+      callback()
+    })
+  } else {
+    this.buffer.push(buffer)
+    if (typeof(callback) === 'function')
+      this.callbacks.push(callback)
+
+    this._process()
+  }
 }
 
 AppendStream.prototype._end = function () {
