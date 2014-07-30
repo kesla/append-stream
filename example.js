@@ -15,6 +15,14 @@ stream.write('boop', function () {
       // nice - you can end a stream!
       stream.end(function () {
         console.log('and now the stream has ended')
+        // lazy: true means that the file won't be opened (created) unless there's a write
+        require('./append-stream')(filename + '3', { lazy: true }, function (err, stream) {
+          stream.end(function () {
+            require('fs').exists(filename + '3', function (exists) {
+              console.log('Does this file exists (it should not)?', exists)
+            })
+          })
+        })
       })
     })
   })
