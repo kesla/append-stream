@@ -24,6 +24,11 @@ npm install append-stream
 * backpressure
 * streams2-compability
 * writing data at some point past the beginning of the file
+* events
+
+### Buffering
+
+When a stream isn't avaible for write (e.g. when a write is active or the stream is getting opened), all subsequental writes will be buffered and then written to disk in a single write once the stream is available again. This explains the super fast times for writing concurrently, as shown in the benchmarks below.
 
 ### Error handling
 

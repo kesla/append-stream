@@ -1,7 +1,7 @@
 {
   "name": "append-stream",
   "version": "1.2.0",
-  "description": "A quick and dirty really fast stream-like module to append data to a file",
+  "description": "An alternative to fs.createWriteStream. Don't handle backpressure, but it's faster and has some other features.",
   "main": "append-stream.js",
   "scripts": {
     "test": "tape test.js"
