@@ -24,23 +24,28 @@ var fs = require('fs')
         , callback
       )
     }
+  , noop = function () {}
 
 AppendStream.prototype._open = function (path, flags, mode, callback) {
   var self = this
 
-  fs.open(path, flags, mode, function (err, fd) {
-    if (err) {
-      if (callback)
-        callback(err)
-      return
-    }
+  callback = callback || noop
 
-    self.fd = fd
-    if (self.state === 'opening')
-      self.state = 'idle'
-    self._process()
-    if (callback)
+  fs.open(path, flags, mode, function (err, fd) {
+
+    if (err) {
+      callback(err)
+    } else {
+      self.fd = fd
+
+      // check so that we're behaving well even if we're closing an open
+      // stream directly
+      if (self.state === 'opening')
+        self.state = 'idle'
+
+      self._process()
       callback(null, self)
+    }
   })
 }
 
@@ -83,11 +88,10 @@ AppendStream.prototype._process = function () {
 AppendStream.prototype.write = function (buffer, callback) {
   var self = this
 
-  if (this.state === 'ending' || this.state === 'ended') {
-    if (callback)
-      callback(new Error('write after end'))
-    return
-  }
+  callback = callback || noop
+
+  if (this.state === 'ending' || this.state === 'ended')
+    return callback(new Error('write after end'))
 
   if (!Buffer.isBuffer(buffer))
     buffer = new Buffer(buffer)
@@ -104,7 +108,7 @@ AppendStream.prototype.write = function (buffer, callback) {
     })
   } else {
     this.buffer.push(buffer)
-    if (typeof(callback) === 'function')
+    if (callback !== noop)
       this.callbacks.push(callback)
 
     this._process()
@@ -142,23 +146,17 @@ AppendStream.prototype._end = function () {
 }
 
 AppendStream.prototype.end = function (callback) {
-  if (this.state === 'ended') {
+  var oldState = this.state
+
+  if (oldState === 'ended') {
     setImmediate(callback)
-  } else if (this.state === 'ending') {
-    if (callback) {
+  } else {
+    this.state = 'ending'
+    if (callback)
       this.endCallbacks.push(callback)
+    if (oldState === 'idle') {
+      this._end()
     }
-  } else if (this.state === 'idle'){
-    this.state = 'ending'
-
-    if (callback)
-      this.endCallbacks.push(callback)
-
-    this._end()
-  } else if (this.state === 'writing' || this.state === 'opening') {
-    this.state = 'ending'
-    if (callback)
-      this.endCallbacks.push(callback)
   }
 }
 
