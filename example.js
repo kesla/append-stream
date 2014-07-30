@@ -1,7 +1,13 @@
-var filename = __dirname + '/testdir/beep-boop'
+var directory = __dirname + '/testdir/'
+  , filename = directory + 'beep-boop'
   , AppendStream = require('./append-stream')
 
-  , stream = new AppendStream(filename)
+  , stream
+
+require('rimraf').sync(directory)
+require('mkdirp').sync(directory)
+
+stream = new AppendStream(filename)
 
 stream.write('beep')
 stream.write('boop', function () {

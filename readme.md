@@ -13,7 +13,6 @@ __sales pitch__: Sometimes all you want to do is to write to a file. And you wan
 npm install append-stream
 ```
 
-
 ## Features
 
 ### Comparsion to fs.createWriteStream()
@@ -55,10 +54,16 @@ This means that the file will be opened the first time that you call `stream.wri
 ### Input
 
 ```javascript
-var filename = __dirname + '/testdir/beep-boop'
+var directory = __dirname + '/testdir/'
+  , filename = directory + 'beep-boop'
   , AppendStream = require('./append-stream')
 
-  , stream = new AppendStream(filename)
+  , stream
+
+require('rimraf').sync(directory)
+require('mkdirp').sync(directory)
+
+stream = new AppendStream(filename)
 
 stream.write('beep')
 stream.write('boop', function () {
@@ -93,7 +98,7 @@ written to file:
 beepboop
 the stream is now opened and ready!
 and now the stream has ended
-Does this file exists (it should not)? true
+Does this file exists (it should not)? false
 ```
 
 ## Benchmark
