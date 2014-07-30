@@ -1,6 +1,6 @@
 {
   "name": "append-stream",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "An alternative to fs.createWriteStream. Don't handle backpressure, but it's faster and has some other features.",
   "main": "append-stream.js",
   "scripts": {
